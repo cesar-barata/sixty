@@ -105,3 +105,31 @@ length_1(stack2, return) {
   return' = return + 1
   continuation(stack, return')
 }
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+times : Int -> Int -> Int
+times a b =
+  if a == 1 then
+    b
+  else
+    b + times (a - 1) b
+
+times(stack, a, b) {
+  if a == 1 then
+    continuation = peek(stack)
+    continuation(stack, b)
+  else
+    stack2 = stack.push(times_1)
+    stack3 = stack2.push(b)
+    times (a - 1) b
+}
+
+times_1(stack, return) {
+  (stack, b) = pop(stack)
+  (stack, cont) = pop(stack)
+  return' = b + return
+  cont(stack, return')
+}
