@@ -128,6 +128,7 @@ times(stack, a, b) {
 }
 
 times_1(stack, return) {
+  (stack, _) = pop(stack)
   (stack, b) = pop(stack)
   (stack, cont) = pop(stack)
   return' = b + return
