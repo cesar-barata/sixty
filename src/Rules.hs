@@ -20,6 +20,7 @@ import qualified Data.Text.Unsafe as Text
 import Rock
 import System.FilePath
 
+import qualified ApplicativeNormalisation
 import Binding (Binding)
 import qualified Builtin
 import qualified ClosureConversion
@@ -461,7 +462,8 @@ rules sourceDirectories files readFile_ (Writer (Writer query)) =
             panic "ClosureConvertedType: no type"
 
           Just def ->
-            fmap (first $ fromMaybe $ panic "ClosureConvertedType error") $ runElaborator (Scope.KeyedName Scope.Definition qualifiedName) $
+            fmap (first $ fromMaybe $ panic "ClosureConvertedType error") $
+            runElaborator (Scope.KeyedName Scope.Definition qualifiedName) $
               (, []) <$> ClosureConverted.typeOfDefinition (ClosureConverted.Context.empty $ Scope.KeyedName Scope.Definition qualifiedName) def
 
     ClosureConvertedConstructorType (Name.QualifiedConstructor dataTypeName constr) ->
@@ -497,6 +499,18 @@ rules sourceDirectories files readFile_ (Writer (Writer query)) =
 
           _ ->
             panic "ClosureConvertedConstructorType: none-datatype"
+
+    Applicative name@(Name.Lifted qualifiedName _) ->
+      nonInput $ do
+        maybeDef <- fetch $ ClosureConverted name
+        case maybeDef of
+          Nothing ->
+            pure (Nothing, [])
+
+          Just def ->
+            fmap (first $ Just . fromMaybe (panic "ApplicativeNormalisation error")) $
+            runElaborator (Scope.KeyedName Scope.Definition qualifiedName) $
+              (, []) <$> ApplicativeNormalisation.normaliseDefinition (Scope.KeyedName Scope.Definition qualifiedName) def
   where
     input :: Functor m => m a -> m ((a, TaskKind), [Error])
     input = fmap ((, mempty) . (, Input))

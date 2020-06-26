@@ -9,7 +9,6 @@ import ClosureConverted.Context (Context)
 import qualified ClosureConverted.Context as Context
 import qualified ClosureConverted.Domain
 import qualified ClosureConverted.Evaluation
-import Plicity
 import qualified ClosureConverted.Readback
 import qualified ClosureConverted.Syntax as ClosureConverted
 import qualified ClosureConverted.TypeOf
@@ -21,9 +20,40 @@ import Literal (Literal)
 import Monad
 import Name (Name)
 import qualified Name
+import Plicity
+import qualified Scope
 import Syntax.Telescope (Telescope)
 import qualified Syntax.Telescope as Telescope
 import Var (Var)
+
+normaliseDefinition :: Scope.KeyedName -> ClosureConverted.Definition -> M Applicative.Definition
+normaliseDefinition scopeKey def =
+  case def of
+    ClosureConverted.TypeDeclaration type_ ->
+      Applicative.TypeDeclaration <$> normaliseClosedTerm scopeKey type_
+
+    ClosureConverted.ConstantDefinition term ->
+      Applicative.ConstantDefinition <$> normaliseClosedTerm scopeKey term
+
+    ClosureConverted.FunctionDefinition tele ->
+      Applicative.FunctionDefinition <$> _ tele
+
+    ClosureConverted.DataDefinition constructorDefs ->
+      Applicative.DataDefinition <$> _ constructorDefs
+
+    ClosureConverted.ParameterisedDataDefinition tele ->
+      Applicative.ParameterisedDataDefinition <$> _ tele
+
+normaliseClosedTerm :: Scope.KeyedName -> ClosureConverted.Term Void -> M (Applicative.Term Void)
+normaliseClosedTerm scopeKey =
+  normaliseTerm (Context.empty scopeKey) (Environment.empty scopeKey)
+
+normaliseTerm :: Context v -> Environment () v' -> ClosureConverted.Term v -> M (Applicative.Term v')
+normaliseTerm context env term = do
+  value <- evaluate context term
+  pure $ readback env value
+
+-------------------------------------------------------------------------------
 
 data Value
   = Operand !Operand
